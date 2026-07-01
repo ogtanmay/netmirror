@@ -141,29 +141,26 @@ class _NmSearchState extends ConsumerState<Search>
   }
 
   Widget buildSearchbar() {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
-      margin: const EdgeInsets.symmetric(vertical: 0),
       child: TextField(
         autofocus: true,
         controller: _searchController,
-        onTapOutside: (e) {
-          searchFocusNode.unfocus();
-        },
+        onTapOutside: (_) => searchFocusNode.unfocus(),
         style: const TextStyle(color: Colors.white),
         focusNode: searchFocusNode,
         decoration: InputDecoration(
-          contentPadding: EdgeInsets.zero,
-          isDense: true,
-          hintText: 'Search',
-          hintStyle: const TextStyle(color: Colors.grey),
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
-          filled: true,
-          fillColor: const Color.fromARGB(221, 51, 51, 51),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(width: 0, style: BorderStyle.none),
-          ),
+          hintText: 'Search movies, shows…',
+          prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                )
+              : null,
         ),
       ),
     );
@@ -179,13 +176,12 @@ class _NmSearchState extends ConsumerState<Search>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
-            if (Platform.isMacOS)
-              SizedBox(height: 20), // Space for the title bar on macOS
+            if (Platform.isMacOS) const SizedBox(height: 20),
             Expanded(
               child: NestedScrollView(
                 headerSliverBuilder: (context, b) {
@@ -194,31 +190,30 @@ class _NmSearchState extends ConsumerState<Search>
                       title: buildSearchbar(),
                       automaticallyImplyLeading: false,
                       titleSpacing: 0,
-                      backgroundColor: Colors.black,
                       floating: true,
                       snap: true,
                     ),
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: StickyHeaderDelegate(
-                        minHeight: 40.0,
-                        maxHeight: 40.0,
-                        child: Container(
-                          color: Colors.black,
+                        minHeight: 44.0,
+                        maxHeight: 44.0,
+                        child: ColoredBox(
+                          color: const Color(0xFF0A0A0A),
                           child: TabBar(
                             controller: _tabController,
-                            indicatorWeight: 1.0,
-
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            indicatorColor: Colors.white,
+                            indicatorWeight: 2.0,
+                            indicatorSize: TabBarIndicatorSize.label,
+                            indicatorColor: cs.primary,
                             labelStyle: const TextStyle(
-                              fontSize: 17.0,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 14.0,
+                              fontWeight: FontWeight.w600,
                             ),
-                            // overlayColor: WidgetStatePropertyAll(Colors.red),
-                            unselectedLabelColor: Colors.grey,
+                            unselectedLabelColor: Colors.white38,
                             labelColor: Colors.white,
                             isScrollable: true,
+                            tabAlignment: TabAlignment.start,
+                            dividerColor: Colors.white10,
                             tabs: OTT.values
                                 .map((e) => Tab(text: e.name))
                                 .toList(),
@@ -242,8 +237,18 @@ class _NmSearchState extends ConsumerState<Search>
                       ott: OTT.hotstar,
                       count: getNetflixCrossAxisCount(size.width) + 1,
                     ),
-                    const Center(child: Text('Not Implemented Yet')),
-                    const Center(child: Text('Not Implemented Yet')),
+                    const Center(
+                      child: Text(
+                        'Not Implemented Yet',
+                        style: TextStyle(color: Colors.white54),
+                      ),
+                    ),
+                    const Center(
+                      child: Text(
+                        'Not Implemented Yet',
+                        style: TextStyle(color: Colors.white54),
+                      ),
+                    ),
                   ],
                 ),
               ),

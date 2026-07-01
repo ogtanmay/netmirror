@@ -171,21 +171,34 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // In your downloads screen
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        surfaceTintColor: Colors.black,
-        backgroundColor: Colors.black,
         automaticallyImplyLeading: !isDesk,
-        title: windowDragAreaWithChild([
-          const Text('Downloads', style: TextStyle(color: Colors.white)),
-        ]),
+        title: windowDragAreaWithChild([const Text('Downloads')]),
       ),
-      body: ListView.builder(
-        itemCount: downloads.length,
-        itemBuilder: (context, i) => buildDownloadItem(downloads[i], i),
-      ),
+      body: downloads.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.download_outlined,
+                    size: 64,
+                    color: Colors.white24,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "No downloads yet",
+                    style: TextStyle(color: Colors.white54, fontSize: 16),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: downloads.length,
+              itemBuilder: (context, i) => buildDownloadItem(downloads[i], i),
+            ),
     );
   }
 
@@ -219,248 +232,259 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
     );
   }
 
-  GestureDetector buildDownloadItem(DownloadItem item, int i) {
+  Widget buildDownloadItem(DownloadItem item, int i) {
+    final cs = Theme.of(context).colorScheme;
     final firstNonDownloadAudioIndex = item.audioLangs.indexWhere(
       (e) => !e.status,
     );
     final isAudioDownloading = firstNonDownloadAudioIndex != -1;
-    return GestureDetector(
-      onTap: () async {
-        if (item.type == "series") {
-          context.push("/downloads", extra: item.id);
-          return;
-        }
 
-        l.debug("download id: ${item.id}, playlist path: ${item.playlistPath}");
-        final id = item.seriesId ?? item.id;
-        final movie = await DB.movie.get(id, item.ottId);
-        if (movie == null) {
-          log("Movie not found in DB for id: $id");
-          return;
-        }
-
-        GoRouter.of(context).push(
-          "/player",
-          extra: (
-            url: item.playlistPath,
-            movie: movie,
-            watchHistory: null,
-            seasonNumber: item.seasonNumber,
-            episodeNumber: item.episodeNumber,
-            subtitleUrl: null,
-          ),
-        );
-      },
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        // padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        padding: EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 0),
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 30, 30, 30),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    item.thumbnail,
-                    fit: BoxFit.cover,
-                    width: 160,
-                    height: 92,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[800],
-                        child: Center(
-                          child: Icon(Icons.error, color: Colors.white),
-                        ),
-                      );
-                    },
-                    // cacheManager: MovieCacheManager.instance,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Text("${item.title} ${item.id} || ${item.movieId}"),
-                      Text(
-                        item.title,
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
-
-                      if (item.type == "series") ...[
-                        SizedBox(height: 6),
-                        Text(
-                          "Episodes: ${item.completedEpisodes}/${item.totalEpisodes}",
-                        ),
-                        SizedBox(height: 6),
-                        if (item.completedEpisodes == item.totalEpisodes)
-                          Text(
-                            "Status: Completed",
-                            style: TextStyle(color: DownloadColors.completed),
-                          ),
-                      ] else ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            children: [
-                              if (item.type == "episode") ...[
-                                buildContainer(
-                                  "S${item.seasonNumber} $Dot E${item.episodeNumber!}",
-                                ),
-                              ],
-                              buildContainer(item.resolution),
-                              buildContainer(item.runtime ?? "Nan"),
-                            ],
-                          ),
-                        ),
-                        // Text("id: ${item.id}"),
-                        // if (item.status == "downloading")
-                        _buildProgressAudioOrVideo(
-                          item,
-                          firstNonDownloadAudioIndex,
-                        ),
-
-                        // else
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text:
-                                    'Status: ', // Default color for the prefix
-                              ),
-                              TextSpan(
-                                text: item.status,
-                                style: TextStyle(
-                                  color: DownloadColors.fromStatus(item.status),
-                                ), // Color for the status
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (item.type == "series")
-                  SizedBox(
-                    // color: Colors.red,
-                    width: 30,
-                    height: 100,
-                    child: Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white70,
-                      size: 22,
-                    ),
-                  ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      child: Card(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () async {
+            if (item.type == "series") {
+              context.push("/downloads", extra: item.id);
+              return;
+            }
+            l.debug(
+              "download id: ${item.id}, playlist path: ${item.playlistPath}",
+            );
+            final id = item.seriesId ?? item.id;
+            final movie = await DB.movie.get(id, item.ottId);
+            if (movie == null) {
+              log("Movie not found in DB for id: $id");
+              return;
+            }
+            GoRouter.of(context).push(
+              "/player",
+              extra: (
+                url: item.playlistPath,
+                movie: movie,
+                watchHistory: null,
+                seasonNumber: item.seasonNumber,
+                episodeNumber: item.episodeNumber,
+                subtitleUrl: null,
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(
+              left: 12,
+              right: 12,
+              top: 12,
+              bottom: 8,
             ),
-
-            if (item.status != "completed") SizedBox(height: 2),
-            if (item.status != "completed")
-              Padding(
-                padding: const EdgeInsets.only(top: 0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // vertical dots menu
-                    _buildIconButton(Icons.more_vert, () {
-                      final player = ExternalPlayer.offlineFile;
-                      showMenu(
-                        position: RelativeRect.fromLTRB(100, 100, 0, 0),
-                        context: context,
-                        items: [
-                          PopupMenuItem(
-                            onTap: () => delete(item.id, item.type, i),
-                            child: Text("Delete Download"),
+                    // Thumbnail
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        item.thumbnail,
+                        fit: BoxFit.cover,
+                        width: 150,
+                        height: 86,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 150,
+                          height: 86,
+                          color: const Color(0xFF2A2A2A),
+                          child: const Center(
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: Colors.white38,
+                            ),
                           ),
-                          PopupMenuItem(onTap: () {}, child: Text("Select")),
-                          PopupMenuItem(
-                            onTap: () =>
-                                openMovie(item.seriesId ?? item.id, item.ottId),
-                            child: Text("Go to Page"),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-
-                          // Android specific
-                          if (Platform.isAndroid)
-                            PopupMenuItem(
-                              onTap: () =>
-                                  playWithAndroidVlc(item.playlistPath),
-                              child: Text("Play With VLC"),
+                          const SizedBox(height: 6),
+                          if (item.type == "series") ...[
+                            Text(
+                              "Episodes: ${item.completedEpisodes}/${item.totalEpisodes}",
+                              style: TextStyle(
+                                color: cs.onSurface.withValues(alpha: 0.6),
+                                fontSize: 13,
+                              ),
                             ),
-                          // MacOS specific
-                          if (Platform.isMacOS)
-                            PopupMenuItem(
-                              onTap: () => player.iina(item.playlistPath),
-                              child: Text("Play With IINA"),
+                            if (item.completedEpisodes == item.totalEpisodes)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  "Completed",
+                                  style: TextStyle(
+                                    color: DownloadColors.completed,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                          ] else ...[
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                if (item.type == "episode")
+                                  buildChip(
+                                    "S${item.seasonNumber} $Dot E${item.episodeNumber!}",
+                                  ),
+                                if (item.resolution.isNotEmpty)
+                                  buildChip(item.resolution),
+                                if (item.runtime != null)
+                                  buildChip(item.runtime!),
+                              ],
                             ),
-                          // Windows specific
-                          if (Platform.isWindows)
-                            PopupMenuItem(
-                              onTap: () => player.wmp(item.playlistPath),
-                              child: Text("Play With Windows Media Player"),
+                            const SizedBox(height: 4),
+                            _buildProgressAudioOrVideo(
+                              item,
+                              firstNonDownloadAudioIndex,
                             ),
-
-                          if (isDesk) ...[
-                            PopupMenuItem(
-                              onTap: () => player.vlc(item.playlistPath),
-                              child: Text("VLC"),
-                            ),
-                            PopupMenuItem(
-                              onTap: () => player.mpv(item.playlistPath),
-                              child: Text("Mpv"),
-                            ),
-                            PopupMenuItem(
-                              onTap: () => player.ffPlay(item.playlistPath),
-                              child: Text("FfPlay"),
-                            ),
-                            PopupMenuItem(
-                              onTap: () => player.mplayer(item.playlistPath),
-                              child: Text("Mplayer"),
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: 'Status: ',
+                                    style: TextStyle(
+                                      color: cs.onSurface.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: item.status,
+                                    style: TextStyle(
+                                      color: DownloadColors.fromStatus(
+                                        item.status,
+                                      ),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
-                          PopupMenuItem(
-                            onTap: () => _launchUrl(item.playlistPath),
-                            child: Text("Other"),
-                          ),
                         ],
-                      );
-                    }),
-                    if (item.status == "paused" || item.status == "failed")
-                      _buildIconButton(Icons.play_arrow, () {
-                        Downloader.instance.resumeDownload(item.id);
+                      ),
+                    ),
+                    if (item.type == "series")
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white38,
+                      ),
+                  ],
+                ),
+                // Progress + action row
+                if (item.status != "completed") ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildIconButton(Icons.more_vert_rounded, () {
+                        final player = ExternalPlayer.offlineFile;
+                        showMenu(
+                          position: RelativeRect.fromLTRB(40, 200, 0, 0),
+                          context: context,
+                          items: [
+                            PopupMenuItem(
+                              onTap: () => delete(item.id, item.type, i),
+                              child: const Text("Delete Download"),
+                            ),
+                            PopupMenuItem(
+                              onTap: () => openMovie(
+                                item.seriesId ?? item.id,
+                                item.ottId,
+                              ),
+                              child: const Text("Go to Page"),
+                            ),
+                            if (Platform.isAndroid)
+                              PopupMenuItem(
+                                onTap: () =>
+                                    playWithAndroidVlc(item.playlistPath),
+                                child: const Text("Play With VLC"),
+                              ),
+                            if (Platform.isMacOS)
+                              PopupMenuItem(
+                                onTap: () => player.iina(item.playlistPath),
+                                child: const Text("Play With IINA"),
+                              ),
+                            if (Platform.isWindows)
+                              PopupMenuItem(
+                                onTap: () => player.wmp(item.playlistPath),
+                                child: const Text(
+                                  "Play With Windows Media Player",
+                                ),
+                              ),
+                            if (isDesk) ...[
+                              PopupMenuItem(
+                                onTap: () => player.vlc(item.playlistPath),
+                                child: const Text("VLC"),
+                              ),
+                              PopupMenuItem(
+                                onTap: () => player.mpv(item.playlistPath),
+                                child: const Text("MPV"),
+                              ),
+                            ],
+                            PopupMenuItem(
+                              onTap: () => _launchUrl(item.playlistPath),
+                              child: const Text("Open in Browser"),
+                            ),
+                          ],
+                        );
                       }),
-                    if (item.status == "downloading" ||
-                        item.status == "pending")
-                      _buildIconButton(Icons.pause, () {
-                        Downloader.instance.pauseDownload(item.id);
-                      }),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: LinearProgressIndicator(
-                        value:
-                            (item.audioPrefix.isNotEmpty &&
+                      if (item.status == "paused" || item.status == "failed")
+                        _buildIconButton(Icons.play_arrow_rounded, () {
+                          Downloader.instance.resumeDownload(item.id);
+                        }),
+                      if (item.status == "downloading" ||
+                          item.status == "pending")
+                        _buildIconButton(Icons.pause_rounded, () {
+                          Downloader.instance.pauseDownload(item.id);
+                        }),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            minHeight: 5,
+                            value: (item.audioPrefix.isNotEmpty &&
                                     item.audioProgress < 100
                                 ? item.audioProgress
                                 : item.videoProgress) /
-                            100,
-                        backgroundColor: Colors.grey[800],
-                        color: isAudioDownloading
-                            ? Color.fromARGB(255, 116, 116, 116)
-                            : Colors.white,
+                                100,
+                            color: isAudioDownloading
+                                ? cs.tertiary
+                                : cs.primary,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              SizedBox(height: 8),
-          ],
+                    ],
+                  ),
+                ] else
+                  const SizedBox(height: 4),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -470,26 +494,25 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
     return SizedBox.square(
       dimension: 34,
       child: IconButton(
-        color: Colors.white,
-        // style: ButtonStyle(
-        //   backgroundColor: WidgetStatePropertyAll(Colors.white10),
-        // ),
         onPressed: onPressed,
         iconSize: 18,
         icon: Icon(icon),
+        color: Colors.white70,
       ),
     );
   }
 
-  Widget buildContainer(String text) {
+  Widget buildChip(String text) {
     return Container(
-      margin: EdgeInsets.only(right: 8),
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(4),
+        color: const Color(0xFF2A2A2A),
+        borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(text, style: TextStyle(fontSize: 12, color: Colors.white)),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 11, color: Colors.white70),
+      ),
     );
   }
 }

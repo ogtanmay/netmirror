@@ -59,6 +59,7 @@ const themeColor = Color.fromARGB(255, 171, 109, 105);
 final darkScheme = ColorScheme.fromSeed(
   seedColor: themeColor,
   brightness: Brightness.dark,
+  dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
 );
 
 class MainApp extends StatefulWidget {
@@ -140,24 +141,133 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   final theme = ThemeData(
     useMaterial3: true,
     colorScheme: darkScheme,
+    scaffoldBackgroundColor: const Color(0xFF0A0A0A),
+    // ── AppBar ──────────────────────────────────────────────────────────
     appBarTheme: AppBarTheme(
       toolbarHeight: isDesk ? 28 : 48,
       centerTitle: false,
       titleTextStyle: TextStyle(fontSize: isDesk ? 14 : 20),
+      backgroundColor: Colors.black,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
     ),
+    // ── Card ────────────────────────────────────────────────────────────
+    cardTheme: CardThemeData(
+      color: const Color(0xFF1C1C1E),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: EdgeInsets.zero,
+    ),
+    // ── ListTile ────────────────────────────────────────────────────────
+    listTileTheme: const ListTileThemeData(
+      tileColor: Colors.transparent,
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      minVerticalPadding: 8,
+    ),
+    // ── Input / TextField ────────────────────────────────────────────────
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: const Color(0xFF2A2A2A),
+      hintStyle: const TextStyle(color: Colors.white38),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: darkScheme.primary, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      isDense: true,
+    ),
+    // ── SnackBar ─────────────────────────────────────────────────────────
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: const Color(0xFF2C2C2E),
+      contentTextStyle: const TextStyle(color: Colors.white),
+    ),
+    // ── Buttons ──────────────────────────────────────────────────────────
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    ),
+    // ── Chip ─────────────────────────────────────────────────────────────
+    chipTheme: ChipThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      side: BorderSide.none,
+      backgroundColor: const Color(0xFF2A2A2A),
+      labelStyle: const TextStyle(fontSize: 12, color: Colors.white70),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    ),
+    // ── Divider ──────────────────────────────────────────────────────────
+    dividerTheme: const DividerThemeData(
+      color: Color(0xFF2C2C2E),
+      thickness: 1,
+      space: 1,
+    ),
+    // ── Dialog ───────────────────────────────────────────────────────────
+    dialogTheme: DialogThemeData(
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      titleTextStyle: const TextStyle(
+        color: Colors.white,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+    // ── Switch ───────────────────────────────────────────────────────────
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return Colors.white;
-        }
+        if (states.contains(WidgetState.selected)) return Colors.white;
         return Colors.grey;
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return Colors.white.withValues(alpha: 0.6);
+          return darkScheme.primary;
         }
-        return Colors.grey.withValues(alpha: 0.5);
+        return Colors.grey.withValues(alpha: 0.4);
       }),
+      trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+    ),
+    // ── Progress indicator ────────────────────────────────────────────────
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: darkScheme.primary,
+      linearTrackColor: Colors.white12,
+      circularTrackColor: Colors.white12,
+    ),
+    // ── Bottom sheet ─────────────────────────────────────────────────────
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Color(0xFF1C1C1E),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+    ),
+    // ── PopupMenu ────────────────────────────────────────────────────────
+    popupMenuTheme: PopupMenuThemeData(
+      color: const Color(0xFF2C2C2E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      textStyle: const TextStyle(color: Colors.white),
     ),
   );
 

@@ -77,43 +77,54 @@ class NfNavBar extends StatelessWidget {
       //     label: "My Profile"),
     ];
 
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      color: Colors.black.withOpacity(0.6),
-      height: 55,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.85),
+        border: Border(
+          top: BorderSide(color: cs.outline.withValues(alpha: 0.15), width: 0.5),
+        ),
+      ),
+      height: 58,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: items.mapIndexed((i, item) {
           final isSelected = i == current;
-          return IconButton(
-            onPressed: () {
-              if (i == 0 && current != 0) {
-                GoRouter.of(context).push("/");
-              } else if (i == 1) {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (BuildContext context) {
-                    return OttDrawer(selectedOtt: 0);
-                  },
-                );
-              } else if (i == 3 && current != 3) {
-                GoRouter.of(context).push("/profile");
-              } else if (i == 2) {
-                GoRouter.of(context).push("/search/0");
-              }
-            },
-            icon: Column(
-              children: [
-                isSelected ? item.icon : item.uIcon,
-                const SizedBox(height: 0),
-                Text(
-                  item.label,
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: isSelected ? sClr : usClr,
+          return Expanded(
+            child: InkWell(
+              onTap: () {
+                if (i == 0 && current != 0) {
+                  GoRouter.of(context).push("/");
+                } else if (i == 1) {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (BuildContext context) => OttDrawer(selectedOtt: 0),
+                  );
+                } else if (i == 3 && current != 3) {
+                  GoRouter.of(context).push("/profile");
+                } else if (i == 2) {
+                  GoRouter.of(context).push("/search/0");
+                }
+              },
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  isSelected ? item.icon : item.uIcon,
+                  const SizedBox(height: 2),
+                  Text(
+                    item.label,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                      color: isSelected ? sClr : usClr,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         }).toList(),

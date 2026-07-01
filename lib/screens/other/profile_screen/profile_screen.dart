@@ -55,6 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       fontWeight: FontWeight.bold,
       color: Colors.white,
     );
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: !isDesk,
@@ -64,47 +65,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
               "Profile",
               style: TextStyle(
                 fontSize: isDesk ? 14 : 26,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
           actions: [
             IconButton(
-              onPressed: () {
-                GoRouter.of(context).push("/downloads");
-              },
+              onPressed: () => GoRouter.of(context).push("/downloads"),
               icon: Icon(
                 HugeIcons.strokeRoundedDownload05,
-                color: Colors.white,
-                size: isDesk ? 20 : 28,
+                size: isDesk ? 20 : 26,
               ),
             ),
             IconButton(
-              onPressed: () {
-                GoRouter.of(context).push("/settings-audio-tracks");
-              },
-              icon: Icon(
-                Icons.settings,
-                size: isDesk ? 18 : 28,
-                color: Colors.white,
-              ),
+              onPressed: () =>
+                  GoRouter.of(context).push("/settings-audio-tracks"),
+              icon: Icon(Icons.settings_outlined, size: isDesk ? 18 : 26),
             ),
           ],
         ),
-        backgroundColor: Colors.black,
       ),
-      backgroundColor: Colors.black,
-      // bottomNavigationBar: isLgScreen ? null : const MyNavBar(current: 3),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── My List ──────────────────────────────────────────────
               if (myList.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                const Text("My List", style: headStyle),
+                Text(
+                  "My List",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 10),
                 SizedBox(
                   height: _imgHeight + 10,
                   child: ListView(
@@ -117,11 +115,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           vertical: 5,
                         ),
                         child: InkWell(
-                          onTap: () {
-                            goToMovie(context, ott.id, e.id);
-                          },
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () => goToMovie(context, ott.id, e.id),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                             child: CachedNetworkImage(
                               imageUrl: ott.getImg(e.id),
                               height: _imgHeight,
@@ -137,9 +134,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ],
+              // ── Watch History ─────────────────────────────────────────
               if (watchHistory.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  "Watch History",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSurface,
+                  ),
+                ),
                 const SizedBox(height: 10),
-                const Text("Watch History", style: headStyle),
                 SizedBox(
                   height: _imgHeight + 10 + 3.5,
                   child: ListView(
@@ -148,7 +154,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       final ott = OTT.fromId(e.ottId);
                       return Column(
                         mainAxisAlignment: MainAxisAlignment.end,
-                        // mainAxisSize: MainAxisSize.min,
                         children: [
                           Padding(
                             padding: const EdgeInsets.symmetric(
@@ -156,11 +161,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               vertical: 5,
                             ),
                             child: InkWell(
-                              onTap: () {
-                                goToMovie(context, ott.id, e.id);
-                              },
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () => goToMovie(context, ott.id, e.id),
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                                 child: CachedNetworkImage(
                                   imageUrl: ott.getImg(e.id),
                                   height: _imgHeight,
@@ -175,10 +179,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           SizedBox(
                             width: _imgHeight * ott.aspectRatio,
                             height: 3.5,
-                            child: LinearProgressIndicator(
-                              value: e.current / e.duration,
+                            child: ClipRRect(
                               borderRadius: BorderRadius.circular(2),
-                              color: Colors.red,
+                              child: LinearProgressIndicator(
+                                value: e.current / e.duration,
+                                color: cs.primary,
+                              ),
                             ),
                           ),
                         ],
@@ -187,172 +193,135 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ],
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 20,
-                  horizontal: 2,
+              // ── Links section ─────────────────────────────────────────
+              const SizedBox(height: 24),
+              // Telegram card
+              _ProfileLinkCard(
+                onTap: () async {
+                  final uri = Uri.parse("https://t.me/+dOVQE6fRw3U3YWRl");
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                leading: Icon(
+                  HugeIcons.strokeRoundedTelegram,
+                  size: 36,
+                  color: Colors.blue[400],
                 ),
-                child: InkWell(
+                title: "Join Telegram",
+                subtitle: "Request Movies, Updates, Report Bugs",
+              ),
+              const SizedBox(height: 10),
+              // NetMirror site card
+              _ProfileLinkCard(
+                onTap: () async {
+                  final uri = Uri.parse("https://netmirror.app");
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                leading: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  onTap: () async {
-                    // final uri = Uri.parse("https://t.me/netmirror_app");
-                    final uri = Uri.parse("https://t.me/+dOVQE6fRw3U3YWRl");
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    } else {
-                      throw 'Could not launch telegram link';
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color.fromARGB(153, 135, 135, 135),
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          HugeIcons.strokeRoundedTelegram,
-                          size: 40,
-                          color: Colors.blue[400],
-                        ),
-                        const SizedBox(width: 30),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Join Telegram",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text("Request Movies, Updates, Report Bugs"),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: Image.asset(
+                    "assets/logos/netmirror.png",
+                    height: 36,
+                    width: 36,
                   ),
                 ),
+                title: "NetMirror",
+                subtitle: "Official Netmirror Site",
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 2),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: () async {
-                    final uri = Uri.parse("https://netmirror.app");
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    } else {
-                      throw 'Could not launch telegram link';
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color.fromARGB(153, 135, 135, 135),
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
+              // ── Attribution ───────────────────────────────────────────
+              const SizedBox(height: 16),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Text.rich(
+                    TextSpan(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Image.asset(
-                            "assets/logos/netmirror.png",
-                            height: 40,
-                            width: 40,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "NetMirror",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text("Official Netmirror Site"),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 20,
-                  horizontal: 2,
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: () {},
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color.fromARGB(153, 135, 135, 135),
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      children: [
-                        Text(
-                          "This Android App Was Created By  ",
+                        TextSpan(
+                          text: "Created by  ",
                           style: TextStyle(
-                            fontWeight: FontWeight.w300,
+                            color: cs.onSurface.withValues(alpha: 0.5),
                             fontSize: 12,
+                            fontWeight: FontWeight.w300,
                           ),
                         ),
-                        Text(
-                          "Sarisa Jaya Surya",
+                        TextSpan(
+                          text: "Sarisa Jaya Surya",
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 17,
-                          ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Text("NetMirror",
-                              //     style: TextStyle(
-                              //       fontSize: 20,
-                              //       fontWeight: FontWeight.bold,
-                              //     )),
-                            ],
+                            color: cs.onSurface.withValues(alpha: 0.8),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Reusable M3 card for profile link items.
+class _ProfileLinkCard extends StatelessWidget {
+  const _ProfileLinkCard({
+    required this.onTap,
+    required this.leading,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final VoidCallback onTap;
+  final Widget leading;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              leading,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: cs.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: cs.onSurface.withValues(alpha: 0.4),
               ),
             ],
           ),

@@ -29,191 +29,189 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final labelStyle = Theme.of(context).textTheme.titleMedium;
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        surfaceTintColor: Colors.black,
-        backgroundColor: Colors.black,
         automaticallyImplyLeading: !isDesk,
-        title: windowDragAreaWithChild([Text('Settings')]),
+        title: windowDragAreaWithChild([const Text('Settings')]),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            _buildSwitch(
-              "use External Player for Stream",
-              SettingsOptions.externalPlayer,
-              (value) {
-                SettingsOptions.externalPlayer = value;
-                setState(() {});
-              },
-            ),
-            _buildSwitch(
-              "use External Player for Download",
-              SettingsOptions.externalDownloadPlayer,
-              (value) {
-                SettingsOptions.externalDownloadPlayer = value;
-                setState(() {});
-              },
-            ),
-
-            _buildSwitch(
-              "Fast Mode, by filtering Audio",
-              SettingsOptions.fastModeByAudio,
-              (value) {
-                if (!SettingsOptions.fastModeByAudio &&
-                    ref.read(audioTrackProvider).isEmpty) {
-                  showMssg("Please select an Audio Track first.");
-                  return;
-                }
-                SettingsOptions.fastModeByAudio = value;
-                setState(() {});
-              },
-            ),
-            _buildSwitch(
-              "Fast Mode, by filtering Video",
-              SettingsOptions.fastModeByVideo,
-              (value) {
-                if (!SettingsOptions.fastModeByVideo &&
-                    SettingsOptions.defaultResolution == "") {
-                  showMssg("Please select a default Quality first.");
-                  return;
-                }
-                SettingsOptions.fastModeByVideo = value;
-                setState(() {});
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Text("Default Quality", style: labelStyle),
-                  const Spacer(),
-                  DropdownMenu<String>(
-                    controller: _resolutionController,
-                    menuStyle: MenuStyle(),
-                    enableFilter: false,
-                    enableSearch: false,
-                    width: 135,
-                    alignmentOffset: const Offset(15, 8),
-                    inputDecorationTheme: InputDecorationTheme(
-                      isDense: true,
-                      suffixIconConstraints: const BoxConstraints(
-                        maxHeight: 42,
-                        maxWidth: 40,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 32.0,
-                        vertical: 0.0,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                    ),
-                    trailingIcon: const Icon(
-                      HugeIcons.strokeRoundedAbacus,
-                      size: 20,
-                    ),
-                    // prevent to  show keyboard ( prevent edit text field )
-                    requestFocusOnTap: false,
-                    initialSelection: SettingsOptions.defaultResolution,
-                    onSelected: (value) {
-                      if (value != null) {
-                        if (value.isEmpty) {
-                          SettingsOptions.fastModeByVideo = false;
-                        }
-                        _resolutionController.text = value;
-                        SettingsOptions.defaultResolution = value;
-                        setState(() {});
-                      }
-                    },
-                    dropdownMenuEntries: const [
-                      DropdownMenuEntry(
-                        value: "1080p",
-                        label: "1080p",
-                        trailingIcon: Icon(Icons.high_quality),
-                      ),
-                      DropdownMenuEntry(
-                        value: "720p",
-                        label: "720p",
-                        trailingIcon: Icon(Icons.hd),
-                      ),
-                      DropdownMenuEntry(
-                        value: "480p",
-                        label: "480p",
-                        trailingIcon: Icon(Icons.sd),
-                      ),
-                      DropdownMenuEntry(
-                        value: "",
-                        label: "none",
-                        trailingIcon: Icon(Icons.do_not_disturb),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Text("Max Download Limit", style: labelStyle),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {
-                      showPopupTextField(
-                        context,
-                        "Max Download Limit",
-                        _maxDownloadLimitController,
-                        () {
-                          SettingsOptions.maxDownloadLimit = int.parse(
-                            _maxDownloadLimitController.text,
-                          );
-                          Navigator.of(context).pop();
-                          setState(() {});
-                          return true;
-                        },
-                      );
-                    },
-                    child: Text(Downloader.maxDownloadLimit.toString()),
-                  ),
-                ],
-              ),
-            ),
-            InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: () {
-                GoRouter.of(context).push('/settings-audio-tracks');
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 4,
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: <Widget>[
+          // ── Playback section ────────────────────────────────────────
+          _sectionHeader(context, "Playback"),
+          _buildSwitch(
+            "External Player for Streaming",
+            SettingsOptions.externalPlayer,
+            (value) {
+              SettingsOptions.externalPlayer = value;
+              setState(() {});
+            },
+          ),
+          _buildSwitch(
+            "External Player for Downloads",
+            SettingsOptions.externalDownloadPlayer,
+            (value) {
+              SettingsOptions.externalDownloadPlayer = value;
+              setState(() {});
+            },
+          ),
+          // ── Quality section ──────────────────────────────────────────
+          const Divider(height: 24),
+          _sectionHeader(context, "Quality"),
+          _buildSwitch(
+            "Fast Mode — filter by Audio",
+            SettingsOptions.fastModeByAudio,
+            (value) {
+              if (!SettingsOptions.fastModeByAudio &&
+                  ref.read(audioTrackProvider).isEmpty) {
+                showMssg("Please select an Audio Track first.");
+                return;
+              }
+              SettingsOptions.fastModeByAudio = value;
+              setState(() {});
+            },
+          ),
+          _buildSwitch(
+            "Fast Mode — filter by Video",
+            SettingsOptions.fastModeByVideo,
+            (value) {
+              if (!SettingsOptions.fastModeByVideo &&
+                  SettingsOptions.defaultResolution == "") {
+                showMssg("Please select a default Quality first.");
+                return;
+              }
+              SettingsOptions.fastModeByVideo = value;
+              setState(() {});
+            },
+          ),
+          ListTile(
+            title: Text("Default Quality", style: labelStyle),
+            trailing: DropdownMenu<String>(
+              controller: _resolutionController,
+              enableFilter: false,
+              enableSearch: false,
+              width: 140,
+              inputDecorationTheme: InputDecorationTheme(
+                isDense: true,
+                suffixIconConstraints: const BoxConstraints(
+                  maxHeight: 40,
+                  maxWidth: 40,
                 ),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Audio Tracks", style: labelStyle),
-                      AudiosPreviewWidget(),
-                    ],
-                  ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12.0,
+                  vertical: 0.0,
+                ),
+                filled: true,
+                fillColor: const Color(0xFF2A2A2A),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
                 ),
               ),
+              trailingIcon: const Icon(Icons.expand_more_rounded, size: 20),
+              requestFocusOnTap: false,
+              initialSelection: SettingsOptions.defaultResolution,
+              onSelected: (value) {
+                if (value != null) {
+                  if (value.isEmpty) SettingsOptions.fastModeByVideo = false;
+                  _resolutionController.text = value;
+                  SettingsOptions.defaultResolution = value;
+                  setState(() {});
+                }
+              },
+              dropdownMenuEntries: const [
+                DropdownMenuEntry(
+                  value: "1080p",
+                  label: "1080p",
+                  trailingIcon: Icon(Icons.high_quality),
+                ),
+                DropdownMenuEntry(
+                  value: "720p",
+                  label: "720p",
+                  trailingIcon: Icon(Icons.hd),
+                ),
+                DropdownMenuEntry(
+                  value: "480p",
+                  label: "480p",
+                  trailingIcon: Icon(Icons.sd),
+                ),
+                DropdownMenuEntry(
+                  value: "",
+                  label: "None",
+                  trailingIcon: Icon(Icons.do_not_disturb),
+                ),
+              ],
             ),
-            FilledButton(
+          ),
+          // ── Downloads section ────────────────────────────────────────
+          const Divider(height: 24),
+          _sectionHeader(context, "Downloads"),
+          ListTile(
+            title: Text("Max Download Limit", style: labelStyle),
+            trailing: TextButton(
+              onPressed: () => showPopupTextField(
+                context,
+                "Max Download Limit",
+                _maxDownloadLimitController,
+                () {
+                  SettingsOptions.maxDownloadLimit = int.parse(
+                    _maxDownloadLimitController.text,
+                  );
+                  Navigator.of(context).pop();
+                  setState(() {});
+                  return true;
+                },
+              ),
+              child: Text(
+                Downloader.maxDownloadLimit.toString(),
+                style: const TextStyle(fontSize: 15),
+              ),
+            ),
+          ),
+          // ── Audio section ─────────────────────────────────────────────
+          const Divider(height: 24),
+          _sectionHeader(context, "Audio"),
+          ListTile(
+            title: Text("Audio Tracks", style: labelStyle),
+            subtitle: AudiosPreviewWidget(),
+            onTap: () => GoRouter.of(context).push('/settings-audio-tracks'),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.white38,
+            ),
+          ),
+          // ── Permissions section ──────────────────────────────────────
+          const Divider(height: 24),
+          _sectionHeader(context, "Permissions"),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: FilledButton.icon(
               onPressed: () async {
-                PermissionStatus status = await Permission.manageExternalStorage
-                    .request();
-                if (status.isGranted) {}
+                final status =
+                    await Permission.manageExternalStorage.request();
+                if (status.isGranted && mounted) {
+                  showMssg("Storage permission granted.");
+                }
               },
-              child: Text("permission"),
+              icon: const Icon(Icons.folder_open_rounded),
+              label: const Text("Grant Storage Permission"),
             ),
-          ],
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.primary,
+          letterSpacing: 0.8,
         ),
       ),
     );
@@ -263,9 +261,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             TextButton(
               onPressed: () {
-                if (onSave()) {
-                  Navigator.of(context).pop();
-                }
+                onSave();
               },
               child: const Text("Save"),
             ),
@@ -277,10 +273,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   void showMssg(String text) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(text, style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(text)),
     );
   }
 }
