@@ -177,22 +177,30 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
         title: windowDragAreaWithChild([const Text('Downloads')]),
       ),
       body: downloads.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.download_outlined,
-                    size: 64,
-                    color: Colors.white24,
+          ? Builder(
+              builder: (context) {
+                final cs = Theme.of(context).colorScheme;
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.download_outlined,
+                        size: 64,
+                        color: cs.onSurface.withValues(alpha: 0.2),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "No downloads yet",
+                        style: TextStyle(
+                          color: cs.onSurface.withValues(alpha: 0.5),
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "No downloads yet",
-                    style: TextStyle(color: Colors.white54, fontSize: 16),
-                  ),
-                ],
-              ),
+                );
+              },
             )
           : ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -216,8 +224,7 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
             text: isAudioDownloading
                 ? "Progress: Audio ${showAudioCount ? "${fndaIndex + 1}/${item.audioLangs.length}" : ""} $Dot  "
                 : "Progress: Video $Dot  ",
-            style: TextStyle(
-              color: Colors.white,
+            style: const TextStyle(
               fontSize: 12,
             ), // Default color for the prefix
           ),

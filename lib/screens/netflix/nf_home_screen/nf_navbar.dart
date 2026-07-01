@@ -23,8 +23,9 @@ class NfNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const sClr = Colors.white;
-    const usClr = Colors.white60;
+    final cs = Theme.of(context).colorScheme;
+    final sClr = cs.onSurface;
+    final usClr = cs.onSurface.withValues(alpha: 0.45);
 
     final imgWidget = ClipRRect(
       borderRadius: BorderRadius.circular(3),
@@ -36,22 +37,18 @@ class NfNavBar extends StatelessWidget {
     );
 
     final items = [
-      const _CustomNavItem(
-        icon: Icon(Icons.home, color: Colors.white),
+      _CustomNavItem(
+        icon: Icon(Icons.home, color: sClr),
         uIcon: Icon(Icons.home_outlined, color: usClr),
         label: "Home",
       ),
-      const _CustomNavItem(
+      _CustomNavItem(
         uIcon: Icon(HugeIcons.strokeRoundedMenuSquare, color: usClr),
-        // icon: Icon(
-        //   HugeIcons.strokeRoundedGameController03,
-        //   color: Colors.white,
-        // ),
         icon: Icon(HugeIcons.strokeRoundedGameController03, color: usClr),
         label: "OTT",
       ),
-      const _CustomNavItem(
-        icon: Icon(CupertinoIcons.add, color: Colors.white),
+      _CustomNavItem(
+        icon: Icon(CupertinoIcons.add, color: sClr),
         uIcon: Icon(Icons.search, color: usClr),
         label: "New & Hot",
       ),
@@ -59,7 +56,7 @@ class NfNavBar extends StatelessWidget {
         icon: Container(
           margin: const EdgeInsets.only(bottom: 2),
           decoration: BoxDecoration(
-            border: Border.all(width: 1, color: Colors.white),
+            border: Border.all(width: 1.5, color: sClr),
             borderRadius: BorderRadius.circular(3),
           ),
           child: imgWidget,
@@ -70,14 +67,7 @@ class NfNavBar extends StatelessWidget {
         ),
         label: "My Profile",
       ),
-      //     label: "New & Hot"),
-      // CustomNavItem(
-      //     icon: Icon(Icons.home, color: Colors.white),
-      //     uIcon: Icon(Icons.home, color: usClr),
-      //     label: "My Profile"),
     ];
-
-    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.85),
@@ -99,7 +89,6 @@ class NfNavBar extends StatelessWidget {
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
                     builder: (BuildContext context) => OttDrawer(selectedOtt: 0),
                   );
                 } else if (i == 3 && current != 3) {

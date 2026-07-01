@@ -147,14 +147,13 @@ class _NmSearchState extends ConsumerState<Search>
         autofocus: true,
         controller: _searchController,
         onTapOutside: (_) => searchFocusNode.unfocus(),
-        style: const TextStyle(color: Colors.white),
         focusNode: searchFocusNode,
         decoration: InputDecoration(
           hintText: 'Search movies, shows…',
-          prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54),
+          prefixIcon: const Icon(Icons.search_rounded),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                  icon: const Icon(Icons.close_rounded),
                   onPressed: () {
                     _searchController.clear();
                     setState(() {});
@@ -277,7 +276,8 @@ class _NmSearchState extends ConsumerState<Search>
       return Center(
         child: Text(
           searchResult.error,
-          style: const TextStyle(color: Colors.white, fontSize: 18),
+          style: const TextStyle(fontSize: 16),
+          textAlign: TextAlign.center,
         ),
       );
     }
@@ -319,18 +319,17 @@ class _NmSearchState extends ConsumerState<Search>
       return const Center(child: Text('Search for something'));
     }
 
-    final searchResult = searchResults[1]; // Remove the force unwrap
+    final searchResult = searchResults[1];
     if (searchResult == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (searchResult.error.isNotEmpty) {
       return Center(
         child: Text(
           searchResult.error,
-          style: const TextStyle(color: Colors.white, fontSize: 18),
+          style: const TextStyle(fontSize: 16),
+          textAlign: TextAlign.center,
         ),
       );
     }
@@ -340,13 +339,12 @@ class _NmSearchState extends ConsumerState<Search>
       child: ListView.builder(
         itemCount: searchResult.results.length,
         itemBuilder: (context, index) {
+          final cs = Theme.of(context).colorScheme;
           final result = searchResult.results[index];
           return InkWell(
-            onTap: () {
-              goToMovie(context, 1, result.id);
-            },
-            child: Container(
-              padding: const EdgeInsets.all(10),
+            onTap: () => goToMovie(context, 1, result.id),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
                   ClipRRect(
@@ -357,22 +355,26 @@ class _NmSearchState extends ConsumerState<Search>
                       width: 150,
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           result.t,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
+                          style: TextStyle(
+                            color: cs.onSurface,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
+                        const SizedBox(height: 4),
                         Text(
-                          "${result.y ?? ''} ${result.r ?? ''}",
-                          style: const TextStyle(color: Colors.grey),
+                          "${result.y ?? ''} ${result.r ?? ''}".trim(),
+                          style: TextStyle(
+                            color: cs.onSurface.withValues(alpha: 0.5),
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
