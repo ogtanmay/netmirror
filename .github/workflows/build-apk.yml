@@ -21,7 +21,6 @@ jobs:
     name: Build APK
     runs-on: ubuntu-latest
 
-    # Allow writing back secrets
     permissions:
       contents: write
       actions: write
@@ -66,28 +65,33 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # ── Keystore — auto-generate on first run ─────────────────────────────
-      # On first run KEYSTORE_BASE64 is empty → we generate a keystore,
-      # save all four values back to GitHub Actions secrets via the PAT,
-      # and use the freshly generated keystore for signing right away.
-      # On every subsequent run the saved secrets are used directly.
+      # ── Detect whether keystore secret already exists ─────────────────────
+      # secrets context cannot be used in if: expressions, so we write a flag
+      # to GITHUB_ENV here and use env.KEYSTORE_EXISTS in all later if: checks.
+      - name: Check keystore secret
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "KEYSTORE_EXISTS=false" >> $GITHUB_ENV
+          else
+            echo "KEYSTORE_EXISTS=true" >> $GITHUB_ENV
+          fi
+
+      # ── Auto-generate keystore on first run ───────────────────────────────
+      # Generates a 4096-bit RSA key, saves all credentials back to GitHub
+      # Secrets via PAT_TOKEN, then copies the keystore to disk for this run.
       - name: Generate keystore (first run only)
-        if: ${{ secrets.KEYSTORE_BASE64 == '' }}
+        if: env.KEYSTORE_EXISTS == 'false'
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           set -e
 
-          # ── Random strong credentials ──────────────────────────────────
           KEYSTORE_PASS=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 28)
           KEY_PASS=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 28)
           KEY_ALIAS="upload"
 
-          echo "KEYSTORE_PASS=$KEYSTORE_PASS" >> $GITHUB_ENV
-          echo "KEY_PASS=$KEY_PASS"           >> $GITHUB_ENV
-          echo "KEY_ALIAS=$KEY_ALIAS"         >> $GITHUB_ENV
-
-          # ── Generate JKS keystore ──────────────────────────────────────
           keytool -genkey -v \
             -keystore release.jks \
             -alias "$KEY_ALIAS" \
@@ -97,24 +101,27 @@ jobs:
             -keypass "$KEY_PASS" \
             -dname "CN=Netmirror, OU=Android, O=Netmirror, L=Unknown, ST=Unknown, C=IN"
 
-          # ── Encode and save to GitHub Secrets ─────────────────────────
           KEYSTORE_B64=$(base64 -w 0 release.jks)
-
           REPO="${{ github.repository }}"
-          gh secret set KEYSTORE_BASE64  --body "$KEYSTORE_B64"    --repo "$REPO"
+
+          gh secret set KEYSTORE_BASE64   --body "$KEYSTORE_B64"   --repo "$REPO"
           gh secret set KEYSTORE_PASSWORD --body "$KEYSTORE_PASS"  --repo "$REPO"
           gh secret set KEY_ALIAS         --body "$KEY_ALIAS"       --repo "$REPO"
           gh secret set KEY_PASSWORD      --body "$KEY_PASS"        --repo "$REPO"
 
           echo "✅ Keystore generated and saved to GitHub Secrets"
 
-          # ── Write keystore to disk for this run ────────────────────────
+          # Make credentials available to later steps in this run
+          echo "KEYSTORE_PASS=$KEYSTORE_PASS" >> $GITHUB_ENV
+          echo "KEY_PASS=$KEY_PASS"           >> $GITHUB_ENV
+          echo "KEY_ALIAS=$KEY_ALIAS"         >> $GITHUB_ENV
+
           mkdir -p android/app/keystore
           cp release.jks android/app/keystore/release.jks
 
-      # Restore keystore from secrets on subsequent runs
+      # ── Restore keystore from secrets (all runs after the first) ──────────
       - name: Restore keystore from secrets
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        if: env.KEYSTORE_EXISTS == 'true'
         run: |
           mkdir -p android/app/keystore
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode \
@@ -128,7 +135,7 @@ jobs:
       - name: Write key.properties
         if: github.event_name != 'workflow_dispatch' || inputs.build_type == 'release'
         run: |
-          cat > android/key.properties <<EOF
+          cat > android/key.properties << EOF
           storePassword=${{ env.KEYSTORE_PASS }}
           keyPassword=${{ env.KEY_PASS }}
           keyAlias=${{ env.KEY_ALIAS }}
