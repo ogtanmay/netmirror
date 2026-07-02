@@ -135,12 +135,12 @@ jobs:
       - name: Write key.properties
         if: github.event_name != 'workflow_dispatch' || inputs.build_type == 'release'
         run: |
-          cat > android/key.properties << EOF
-          storePassword=${{ env.KEYSTORE_PASS }}
-          keyPassword=${{ env.KEY_PASS }}
-          keyAlias=${{ env.KEY_ALIAS }}
-          storeFile=keystore/release.jks
-          EOF
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=%s\n' \
+            "$KEYSTORE_PASS" \
+            "$KEY_PASS" \
+            "$KEY_ALIAS" \
+            "keystore/release.jks" \
+            > android/key.properties
 
       # ── Build ─────────────────────────────────────────────────────────────
       - name: Build release APK (split per ABI)
