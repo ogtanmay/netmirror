@@ -26,7 +26,7 @@ jobs:
       actions: write
 
     steps:
-      # ── Checkout ────────────────────────────────────────────────────────
+      # ── Checkout ─────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -46,10 +46,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Verify Flutter installation
-        run: flutter --version
-
-      # ── Android SDK extras ───────────────────────────────────────────────
+      # ── Android SDK ───────────────────────────────────────────────────────
       - name: Install NDK and SDK components
         run: |
           echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
@@ -65,71 +62,88 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # ── Detect whether keystore secret already exists ─────────────────────
-      # secrets context cannot be used in if: expressions, so we write a flag
-      # to GITHUB_ENV here and use env.KEYSTORE_EXISTS in all later if: checks.
+      # ── Detect whether keystore secret exists ─────────────────────────────
+      # secrets context is forbidden in if: — write a flag to GITHUB_ENV instead
       - name: Check keystore secret
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           if [ -z "$KEYSTORE_B64" ]; then
-            echo "KEYSTORE_EXISTS=false" >> $GITHUB_ENV
+            echo "KEYSTORE_EXISTS=false" >> "$GITHUB_ENV"
           else
-            echo "KEYSTORE_EXISTS=true" >> $GITHUB_ENV
+            echo "KEYSTORE_EXISTS=true"  >> "$GITHUB_ENV"
           fi
 
-      # ── Auto-generate keystore on first run ───────────────────────────────
-      # Generates a 4096-bit RSA key, saves all credentials back to GitHub
-      # Secrets via PAT_TOKEN, then copies the keystore to disk for this run.
+      # ── Generate keystore on first run ────────────────────────────────────
+      # Creates a 4096-bit RSA key, saves all four values to GitHub Secrets
+      # via PAT_TOKEN, then makes the keystore available for signing this run.
       - name: Generate keystore (first run only)
         if: env.KEYSTORE_EXISTS == 'false'
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          set -e
+          set -euo pipefail
 
-          KEYSTORE_PASS=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 28)
+          KS_PASS=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 28)
           KEY_PASS=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 28)
           KEY_ALIAS="upload"
 
+          # Generate JKS keystore explicitly (avoids PKCS12/JKS ambiguity)
           keytool -genkey -v \
             -keystore release.jks \
+            -storetype JKS \
             -alias "$KEY_ALIAS" \
             -keyalg RSA -keysize 4096 \
             -validity 36500 \
-            -storepass "$KEYSTORE_PASS" \
+            -storepass "$KS_PASS" \
             -keypass "$KEY_PASS" \
-            -dname "CN=Netmirror, OU=Android, O=Netmirror, L=Unknown, ST=Unknown, C=IN"
+            -dname "CN=Netmirror,OU=Android,O=Netmirror,L=Unknown,ST=Unknown,C=IN"
 
-          KEYSTORE_B64=$(base64 -w 0 release.jks)
+          # Verify it's readable before saving
+          keytool -list -keystore release.jks -storepass "$KS_PASS" -storetype JKS
+
+          # Base64-encode (no line wraps) and push to GitHub Secrets
+          KS_B64=$(base64 -w 0 release.jks)
           REPO="${{ github.repository }}"
-
-          gh secret set KEYSTORE_BASE64   --body "$KEYSTORE_B64"   --repo "$REPO"
-          gh secret set KEYSTORE_PASSWORD --body "$KEYSTORE_PASS"  --repo "$REPO"
-          gh secret set KEY_ALIAS         --body "$KEY_ALIAS"       --repo "$REPO"
-          gh secret set KEY_PASSWORD      --body "$KEY_PASS"        --repo "$REPO"
+          gh secret set KEYSTORE_BASE64   --body "$KS_B64"    --repo "$REPO"
+          gh secret set KEYSTORE_PASSWORD --body "$KS_PASS"   --repo "$REPO"
+          gh secret set KEY_ALIAS         --body "$KEY_ALIAS"  --repo "$REPO"
+          gh secret set KEY_PASSWORD      --body "$KEY_PASS"   --repo "$REPO"
 
           echo "✅ Keystore generated and saved to GitHub Secrets"
 
-          # Make credentials available to later steps in this run
-          echo "KEYSTORE_PASS=$KEYSTORE_PASS" >> $GITHUB_ENV
-          echo "KEY_PASS=$KEY_PASS"           >> $GITHUB_ENV
-          echo "KEY_ALIAS=$KEY_ALIAS"         >> $GITHUB_ENV
-
+          # Make available to later steps in this run
           mkdir -p android/app/keystore
           cp release.jks android/app/keystore/release.jks
+          printf 'KEYSTORE_PASS=%s\nKEY_PASS=%s\nKEY_ALIAS=%s\n' \
+            "$KS_PASS" "$KEY_PASS" "$KEY_ALIAS" >> "$GITHUB_ENV"
 
-      # ── Restore keystore from secrets (all runs after the first) ──────────
+      # ── Restore keystore from secrets (subsequent runs) ───────────────────
+      # IMPORTANT: always pass secrets through env: — never expand them
+      # inline in shell (${{ secrets.X }} in run: can mangle binary base64).
       - name: Restore keystore from secrets
         if: env.KEYSTORE_EXISTS == 'true'
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          KS_PASS:      ${{ secrets.KEYSTORE_PASSWORD }}
+          KA:           ${{ secrets.KEY_ALIAS }}
+          KP:           ${{ secrets.KEY_PASSWORD }}
         run: |
+          set -euo pipefail
+
           mkdir -p android/app/keystore
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode \
+          # printf avoids the trailing newline that echo adds
+          printf '%s' "$KEYSTORE_B64" | base64 --decode \
             > android/app/keystore/release.jks
 
-          echo "KEYSTORE_PASS=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "KEY_PASS=${{ secrets.KEY_PASSWORD }}"           >> $GITHUB_ENV
-          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}"             >> $GITHUB_ENV
+          # Verify the decoded keystore is intact before proceeding
+          keytool -list \
+            -keystore android/app/keystore/release.jks \
+            -storepass "$KS_PASS" \
+            -storetype JKS
+
+          printf 'KEYSTORE_PASS=%s\nKEY_PASS=%s\nKEY_ALIAS=%s\n' \
+            "$KS_PASS" "$KP" "$KA" >> "$GITHUB_ENV"
 
       # ── Write key.properties ─────────────────────────────────────────────
       - name: Write key.properties
